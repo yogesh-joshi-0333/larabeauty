@@ -1,0 +1,107 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, xml, ctype, json, bcmath, curl
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install PHP Dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Build Assets
+        run: npm run build
+
+      - name: Create deployment package
+        run: |
+          # Remove development files
+          rm -rf node_modules
+          rm -rf tests
+          rm -rf .git
+          rm -rf .github
+          rm -f .env.example
+          rm -f phpunit.xml
+          rm -f pint.json
+          rm -f vite.config.ts
+          rm -f tsconfig.json
+          rm -f eslint.config.js
+          rm -f .prettierrc
+          rm -f .prettierignore
+          rm -f package.json
+          rm -f package-lock.json
+          rm -f composer.lock
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/u555568317/public_html/larabeauty
+
+            # Backup current .env if exists
+            if [ -f .env ]; then
+              cp .env .env.backup
+            fi
+
+      - name: Deploy files via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          server: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          local_path: './'
+          remote_path: '/home/u555568317/public_html/larabeauty/'
+          sftpArgs: '-o ConnectTimeout=60'
+
+      - name: Post-deployment setup
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/u555568317/public_html/larabeauty
+
+            # Restore .env if backup exists
+            if [ -f .env.backup ]; then
+              mv .env.backup .env
+            fi
+
+            # Set permissions
+            chmod -R 755 storage bootstrap/cache
+
+            # Clear and cache
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            echo "Deployment completed successfully!"
