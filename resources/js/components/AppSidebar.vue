@@ -13,11 +13,20 @@ import {
     Layers,
     Menu,
     MessageCircle,
+    Moon,
     MousePointerClick,
     SquareMousePointer,
+    Sun,
 } from 'lucide-vue-next';
+import { useAppearance } from '@/composables/useAppearance';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
+
+const { appearance, updateAppearance } = useAppearance();
+
+const toggleTheme = () => {
+    updateAppearance(appearance.value === 'dark' ? 'light' : 'dark');
+};
 import {
     Sidebar,
     SidebarContent,
@@ -109,13 +118,13 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
+        title: 'GitHub Repo',
+        href: 'https://github.com/yogesh-joshi-0333/larabeauty',
         icon: Folder,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
+        title: 'PrimeVue Docs',
+        href: 'https://primevue.org/documentation',
         icon: BookOpen,
     },
 ];
@@ -141,6 +150,15 @@ const footerNavItems: NavItem[] = [
 
         <SidebarFooter>
             <NavFooter :items="footerNavItems" />
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton @click="toggleTheme" tooltip="Toggle theme">
+                        <Sun v-if="appearance === 'dark'" class="size-4" />
+                        <Moon v-else class="size-4" />
+                        <span>{{ appearance === 'dark' ? 'Light Mode' : 'Dark Mode' }}</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
         </SidebarFooter>
     </Sidebar>
     <slot />
