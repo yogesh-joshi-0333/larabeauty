@@ -1,7 +1,7 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
-/public/build
+# /public/build  # Commented out to allow deployment to shared hosting without npm
 /public/hot
 /public/storage
 /storage/*.key
@@ -26,3 +26,5 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+.env.production
+server-setup.sh
